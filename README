@@ -1,2 +1,19 @@
 
-A Common Lisp implementation of a Slime / Swank client.
+A Common Lisp implementation of the client side of the Slime Swank debugging
+protocol.  Emacs uses the Swank protocol to communicate with a Lisp system when
+the user runs the Slime IDE.
+
+The protocol is useful independently of Emacs because it allows the client to
+evaluate expressions on the Swank server.
+
+Swank Client implements the following API.  For more information, see
+the documentation strings in the code.
+
+swank-connection        The object representing a Swank connection.
+slime-connect           Connect to a remote Common Lisp using the Swank protocol.
+slime-close             Close a Swank connection.
+slime-eval              Evaluate an expression on a remote Lisp.
+slime-eval-async        Evaluate an expression on a remote Lisp asynchronously.
+slime-migrate-evals     Migrate work pending on one Swank connection to another.
+slime-network-error     The condition that represents a network error.
+slime-pending-evals-p   Does a Swank connection have unfinished work pending?
