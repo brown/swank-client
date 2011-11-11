@@ -41,10 +41,6 @@
             :type usocket:stream-usocket
             :initarg :usocket
             :documentation "USOCKET used to communicate with the Swank server.")
-   (dispatcher-lock :reader dispatcher-lock
-                    :initform (bordeaux-threads:make-lock)
-                    :documentation "Lock whose release signals that the event dispatcher associated
-with this connection can exit.")
    (thread-offset :reader thread-offset
                   :initform (incf *thread-offset* +maximum-thread-count+)
                   :type (integer 0 *)
@@ -61,8 +57,8 @@ value added to their thread ID.")
 progress. Used to match each returned value with the continuation it should be passed to.")
    (state :accessor state
           :initform :alive
-          :type (member :alive :dead)
-          :documentation "State of the connection, either :ALIVE or :DEAD.")
+          :type (member :alive :closing :dead)
+          :documentation "State of the connection, either :ALIVE, :CLOSING, or :DEAD.")
    (connection-lock :reader connection-lock
                     :initform (bordeaux-threads:make-lock)
                     :documentation "Lock protecting slots of this connection that are read and
@@ -154,7 +150,7 @@ SWANK-CONNECTION when the connection attempt is successful.  Otherwise, returns 
 SLIME-NETWORK-ERROR if the user has a Slime secret file and there are network problems sending its
 contents to the remote Swank server."
   (let ((usocket (handler-case (usocket:socket-connect host-name port :element-type 'octet)
-                   ((or usocket:connection-refused-error usocket:host-unreachable-error) ()
+                   (usocket:socket-error ()
                      (return-from slime-net-connect nil)))))
     (socket-keep-alive (usocket:socket usocket))
     (let ((connection (make-instance 'swank-connection :usocket usocket))
@@ -199,15 +195,23 @@ the CDR of VALUE."
 ;;; from Lisp don't.
 
 (defun slime-dispatch-event (event connection)
-  "Handle EVENT for a Swank CONNECTION."
+  "Handles EVENT for a Swank CONNECTION.  Signals SLIME-NETWORK-ERROR if there are communications
+problems."
   (destructure-case event
     ((:emacs-rex form package-name thread continuation)
      (let ((id nil))
        (bordeaux-threads:with-lock-held ((connection-lock connection))
-         (when (eq (state connection) :dead) (error "connection dead"))
          (setf id (incf (continuation-counter connection)))
-         (push (list id continuation form package-name thread) (rex-continuations connection)))
-       (slime-send `(:emacs-rex ,form ,package-name ,thread ,id) connection)))
+         (push (list id continuation form package-name thread) (rex-continuations connection))
+         (when (eq (state connection) :dead) (error 'slime-network-error)))
+       (bordeaux-threads:make-thread
+        (lambda ()
+          ;; Catch network errors so the Swank sender thread exits gracefully if there are
+          ;; communications problems with the remote Lisp.
+          (handler-case
+              (slime-send `(:emacs-rex ,form ,package-name ,thread ,id) connection)
+            (slime-network-error ())))
+        :name "swank sender")))
     ((:return value id)
      (let ((send-to-emacs t))
        (bordeaux-threads:with-lock-held ((connection-lock connection))
@@ -396,14 +400,16 @@ CONNECTION-CLOSED-HOOK is called when CONNECTION is closed."
             ;; TODO(brown): Verify that this call to SLIME-DISPATCH-EVENTS will never signal
             ;; SLIME-NETWORK-ERROR.
             (slime-dispatch-event event connection))
-          ;; The event dispatching thread exits when it can acquire the dispatcher lock, which is
-          ;; held by the thread that started the dispatcher, and only released when the Swank
-          ;; connection associated with the dispatcher is closed.
-          (let ((dispatcher-lock (dispatcher-lock connection)))
-            (when (bordeaux-threads:acquire-lock dispatcher-lock nil)
-              (bordeaux-threads:release-lock dispatcher-lock)
-              (close-connection)
-              (return-from slime-dispatch-events))))))
+          (let ((state nil))
+            (bordeaux-threads:with-lock-held ((connection-lock connection))
+              (setf state (state connection)))
+            (ecase state
+              (:alive)
+              (:closing
+               (close-connection)
+               (return-from slime-dispatch-events))
+              (:dead
+               (return-from slime-dispatch-events)))))))
 
 (defun slime-connect (host-name port &optional connection-closed-hook)
   "Connects to the Swank server running on HOST-NAME that is listening on PORT.  Returns a
@@ -414,10 +420,6 @@ the connection is closed."
   (let ((connection (slime-net-connect host-name port)))
     (when connection
       (add-open-connection connection)
-      ;; Acquire a lock used to tell the event dispatcher thread when to exit.  The thread will
-      ;; process events until it can acquire the lock.
-      (unless (bordeaux-threads:acquire-lock (dispatcher-lock connection) nil)
-        (error "unable to acquire event dispatching lock"))
       ;; Create a thread to handle incoming events from the remote Lisp.
       (let ((name (format nil "swank dispatcher for ~A/~D" host-name port)))
         (bordeaux-threads:make-thread (lambda ()
@@ -427,9 +429,7 @@ the connection is closed."
 
 (defun slime-close (connection)
   "Closes CONNECTION to a Swank server."
-  ;; Release the dispatcher lock, so the event dispatcher knows it can exit, then initiate an RPC
-  ;; to the server. The event dispatcher will exit after processing the return event for this
-  ;; final evaluation request.
-  (bordeaux-threads:release-lock (dispatcher-lock connection))
+  (bordeaux-threads:with-lock-held ((connection-lock connection))
+    (setf (state connection) :closing))
   (slime-eval-async nil connection)
   (values))
