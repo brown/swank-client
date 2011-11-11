@@ -26,9 +26,9 @@
 (in-package #:swank-client-test-system)
 
 (defsystem swank-client-test
-  :depends-on (:swank-client #:hu.dwim.stefil :swank)
+  :depends-on (swank-client hu.dwim.stefil swank)
   :components
   ((:file "swank-client_test")))
 
-(defmethod perform ((operation test-op) (component (eql (find-system :swank-client-test))))
-  (funcall (read-from-string "swank-client-test::test-swank-client")))
+(defmethod perform ((operation test-op) (component (eql (find-system 'swank-client-test))))
+  (funcall (read-from-string "swank-client-test:test-swank-client")))
