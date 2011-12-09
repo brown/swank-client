@@ -370,23 +370,25 @@ network problems sending SEXP."
   "Sends SEXP over CONNECTION to a Swank server for evaluation and waits for the
 result.  When the result is received, it is returned.  Signals
 SLIME-NETWORK-ERROR when there are network problems sending SEXP."
-  (let* ((eval-done-lock (bordeaux-threads:make-lock))
-         (eval-done-condition (bordeaux-threads:make-condition-variable))
+  (let* ((done-lock (bordeaux-threads:make-lock "slime eval"))
+         (done (bordeaux-threads:make-condition-variable))
+         (result-available nil)
          (result nil))
-    ;; The locking pattern used here is described in the bordeaux threads documentation.  We
-    ;; acquire a mutex.  The call to CONDITION-WAIT atomically releases the lock and waits on the
-    ;; condition.  The continuation for the async evaluation calls CONTINUATION-NOTIFY while
-    ;; holding the lock, which causes CONDITION-WAIT to return with the lock acquired once again.
-    (unless (bordeaux-threads:acquire-lock eval-done-lock nil)
-      (error "unable to acquire evaluation lock"))
+    ;; See the Bordeaux Threads documentation for a description of the locking pattern used here.
     (slime-eval-async sexp
                       connection
                       (lambda (x)
-                        (bordeaux-threads:with-lock-held (eval-done-lock)
-                          (setf result x)
-                          (bordeaux-threads:condition-notify eval-done-condition))))
-    (bordeaux-threads:condition-wait eval-done-condition eval-done-lock)
-    (bordeaux-threads:release-lock eval-done-lock)
+                        (bordeaux-threads:with-lock-held (done-lock)
+                          (setf result x
+                                result-available t)
+                          (bordeaux-threads:condition-notify done))))
+    (bordeaux-threads:with-lock-held (done-lock)
+      ;; Do not call CONDITION-WAIT if our result is already available, since we would wait forever
+      ;; on the DONE condition variable, which has already been notified.  Also, CONDITION-WAIT can
+      ;; return spuriously before DONE has been notified, so wait again if our result is not yet
+      ;; available.
+      (loop until result-available
+            do (bordeaux-threads:condition-wait done done-lock)))
     (when (and (consp result) (eq (car result) +abort+))
       (error "Evaluation aborted on ~s." (cdr result)))
     result))
@@ -403,8 +405,9 @@ Signals SLIME-NETWORK-ERROR when there are network problems."
     (destructuring-bind (id continuation form package-name thread)
         rec
       (declare (ignore id))
-      (slime-dispatch-event (list :emacs-rex form package-name thread continuation)
-                            new-connection))))
+      (slime-dispatch-event `(:emacs-rex ,form ,package-name ,thread ,continuation)
+                            new-connection)))
+  (setf (rex-continuations old-connection) '()))
 
 (defun slime-dispatch-events (connection connection-closed-hook)
   "Reads and dispatches incoming events for a CONNECTION to a Swank server.  If
