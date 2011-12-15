@@ -269,8 +269,8 @@ are communications problems."
      (print (list :y-or-n-p thread tag question)))
     ((:emacs-return-string thread tag string)
      (slime-send `(:emacs-return-string ,thread ,tag ,string) connection))
-    ((:new-features features)
-     (print (list :new-features features)))
+    ;; Ignore remote Lisp feature changes.
+    ((:new-features features))
     ((:indentation-update info)
      (send-to-emacs `(:indentation-update ,info)))
     ((:eval-no-wait form)
