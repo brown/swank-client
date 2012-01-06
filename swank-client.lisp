@@ -200,7 +200,7 @@ with ARGS bound to the corresponding values in the CDR of VALUE."
 
 (defun send-to-emacs (event)
   "Sends EVENT to Emacs."
-  (swank::send (swank::connection.control-thread (swank::default-connection)) event))
+  (swank::send (swank::mconn.control-thread (swank::default-connection)) event))
 
 ;;;; Protocol event handler (the guts)
 
@@ -270,7 +270,8 @@ are communications problems."
     ((:emacs-return-string thread tag string)
      (slime-send `(:emacs-return-string ,thread ,tag ,string) connection))
     ;; Ignore remote Lisp feature changes.
-    ((:new-features features))
+    ((:new-features features)
+     (declare (ignore features)))
     ((:indentation-update info)
      (send-to-emacs `(:indentation-update ,info)))
     ((:eval-no-wait form)
