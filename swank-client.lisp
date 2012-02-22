@@ -464,3 +464,14 @@ closed."
     (setf (state connection) :closing))
   (slime-eval-async nil connection)
   (values))
+
+(defmacro with-slime-connection ((variable host-name port &optional connection-closed-hook)
+                                 &body body)
+  "Wraps BODY in a LET form where VARIABLE is bound to the value returned by
+(SLIME-CONNECT HOST-NAME PORT CONNECTION-CLOSED-HOOK).  Arranges for the Swank
+connection to be closed when control exits BODY."
+  `(let ((,variable (slime-connect ,host-name ,port ,connection-closed-hook)))
+     (unwind-protect
+          (progn ,@body)
+       (when ,variable
+         (slime-close ,variable)))))

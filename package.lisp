@@ -34,4 +34,5 @@ s-expressions with fully package-qualified symbols.")
            #:slime-eval-async
            #:slime-migrate-evals
            #:slime-network-error
-           #:slime-pending-evals-p))
+           #:slime-pending-evals-p
+           #:with-slime-connection))

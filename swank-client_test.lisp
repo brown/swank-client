@@ -42,20 +42,16 @@
 
 (deftest simple-eval ()
   (swank:create-server :port +server-port+)
-  (let ((connection (slime-connect "localhost" +server-port+)))
-    (unwind-protect
-         (is (= (slime-eval 123 connection) 123))
-      (slime-close connection))))
+  (with-slime-connection (connection "localhost" +server-port+)
+    (is (= (slime-eval 123 connection) 123))))
 
 (deftest simple-eval-async ()
   (swank:create-server :port +server-port+)
-  (let ((connection (slime-connect "localhost" +server-port+)))
-    (unwind-protect
-         (let ((result nil))
-           (slime-eval-async 123 connection (lambda (x) (setf result x)))
-           (sleep 0.1)
-           (is (= result 123)))
-      (slime-close connection))))
+  (with-slime-connection (connection "localhost" +server-port+)
+    (let ((result nil))
+      (slime-eval-async 123 connection (lambda (x) (setf result x)))
+      (sleep 0.1)
+      (is (= result 123)))))
 
 (deftest several-connections ()
   (loop repeat +server-count+
@@ -92,9 +88,7 @@
   (swank:create-server :port +server-port+)
   (flet ((create-string (code)
            (concatenate 'string "hello " (string (code-char code)) " world")))
-    (let ((connection (slime-connect "localhost" +server-port+)))
-      (unwind-protect
-           (loop for code from 0 below 2000 by 100 do
-             (let ((string (create-string code)))
-               (is (string= (slime-eval string connection) string))))
-        (slime-close connection)))))
+      (with-slime-connection (connection "localhost" +server-port+)
+        (loop for code from 0 below 2000 by 100 do
+          (let ((string (create-string code)))
+            (is (string= (slime-eval string connection) string)))))))
