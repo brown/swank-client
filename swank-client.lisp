@@ -116,17 +116,21 @@ by the remote Lisp to which it will be sent."
 (defun slime-net-send (sexp usocket)
   "Sends SEXP to a Swank server over USOCKET.  The s-expression is read and
 evaluated by the remote Lisp."
-  (let* ((terminator (string #\Return))
-         (expression (with-standard-io-syntax
-                       (let ((*package* *io-package*))
-                         (prin1-to-string sexp))))
-         (message-length (+ (length terminator) (length expression)))
-         (message
-          (concatenate 'string (slime-net-encode-length message-length) expression terminator))
-         (buffer (string-to-utf8-octets message)))
+  (let* ((payload (with-standard-io-syntax
+                    (let ((*package* *io-package*))
+                      (prin1-to-string sexp))))
+         (utf8-payload (string-to-utf8-octets payload))
+         ;; The payload always includes one more octet, an encoded newline character at the end.
+         (payload-length (1+ (length utf8-payload)))
+         (utf8-length (string-to-utf8-octets (slime-net-encode-length payload-length)))
+         ;; The encoded length always takes 6 octets.
+         (message (make-octet-vector (+ (length utf8-length) payload-length))))
+    (replace message utf8-length)
+    (replace message utf8-payload :start1 (length utf8-length))
+    (setf (aref message (1- (length message))) (char-code #\Newline))
     ;; We use IGNORE-ERRORS here to catch SB-INT:CLOSED-STREAM-ERROR on SBCL and any other
     ;; system-dependent network or stream errors.
-    (let ((success (ignore-errors (write-sequence buffer (usocket:socket-stream usocket)))))
+    (let ((success (ignore-errors (write-sequence message (usocket:socket-stream usocket)))))
       (unless success (error 'slime-network-error)))))
 
 (defun slime-send (sexp connection)

@@ -87,3 +87,14 @@
            (is (equalp results golden)))
       (dolist (connection connections)
         (slime-close connection)))))
+
+(deftest non-ascii-characters ()
+  (swank:create-server :port +server-port+)
+  (flet ((create-string (code)
+           (concatenate 'string "hello " (string (code-char code)) " world")))
+    (let ((connection (slime-connect "localhost" +server-port+)))
+      (unwind-protect
+           (loop for code from 0 below 2000 by 100 do
+             (let ((string (create-string code)))
+               (is (string= (slime-eval string connection) string))))
+        (slime-close connection)))))
