@@ -40,13 +40,17 @@
 (defconst +server-port+ 12345)
 (defconst +server-count+ 4)
 
+(defun create-swank-server (port)
+  (setf swank:*configure-emacs-indentation* nil)
+  (swank:create-server :port port))
+
 (deftest simple-eval ()
-  (swank:create-server :port +server-port+)
+  (create-swank-server +server-port+)
   (with-slime-connection (connection "localhost" +server-port+)
     (is (= (slime-eval 123 connection) 123))))
 
 (deftest simple-eval-async ()
-  (swank:create-server :port +server-port+)
+  (create-swank-server +server-port+)
   (with-slime-connection (connection "localhost" +server-port+)
     (let ((result nil))
       (slime-eval-async 123 connection (lambda (x) (setf result x)))
@@ -56,7 +60,7 @@
 (deftest several-connections ()
   (loop repeat +server-count+
         for port from +server-port+
-        do (swank:create-server :port port))
+        do (create-swank-server port))
   (let* ((connections (loop repeat +server-count+
                             for port from +server-port+
                             collect (slime-connect "localhost" port)))
@@ -64,7 +68,8 @@
                            :initial-contents (loop repeat +server-count+ for i from 2 collect i)))
          (golden (map 'vector (lambda (x) (* x 2)) work)))
     (unwind-protect
-         (let ((results (make-array +server-count+ :initial-element nil)))
+         (let ((results (make-array +server-count+ :initial-element nil))
+               (results-lock (bordeaux-threads:make-lock "results lock")))
            ;; Synchronous
            (loop for i below (length work)
                  for connection in connections
@@ -78,14 +83,16 @@
                  do (let ((index i))
                       (slime-eval-async `(* 2 ,(aref work i))
                                         connection
-                                        (lambda (result) (setf (aref results index) result)))))
-           (sleep 0.1)
+                                        (lambda (result)
+                                          (bordeaux-threads:with-lock-held (results-lock)
+                                            (setf (aref results index) result))))))
+           (loop while (bordeaux-threads:with-lock-held (results-lock) (some #'null results)))
            (is (equalp results golden)))
       (dolist (connection connections)
         (slime-close connection)))))
 
 (deftest non-ascii-characters ()
-  (swank:create-server :port +server-port+)
+  (create-swank-server +server-port+)
   (flet ((create-string (code)
            (concatenate 'string "hello " (string (code-char code)) " world")))
       (with-slime-connection (connection "localhost" +server-port+)

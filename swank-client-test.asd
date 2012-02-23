@@ -26,7 +26,10 @@
 (in-package #:swank-client-test-system)
 
 (defsystem swank-client-test
-  :depends-on (swank-client hu.dwim.stefil swank)
+  :depends-on (bordeaux-threads
+               hu.dwim.stefil
+               swank
+               swank-client)
   :components
   ((:file "swank-client_test")))
 
