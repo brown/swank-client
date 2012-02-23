@@ -64,6 +64,9 @@ interface, to handle Swank Client connection requests."
   (wait-for-swank-thread))
 
 
-The code above starts two Swank server.  You can connect to the server on port
-4005 by using M-x slime-connect inside Emacs.  You can programmatically connect
-to the second Swank server by calling (slime-connect "my-host-name.com" 10000).
+The code above starts two Swank servers.  You can connect to the server on port
+4005 from Emacs using the command M-x slime-connect.  You can programmatically
+connect to the second Swank server by loading the Swank Client code into your
+Lisp and evaluating:
+
+  (swank-client:slime-connect "my-host.domain.com" 10000)
