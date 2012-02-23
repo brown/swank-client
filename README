@@ -1,19 +1,69 @@
 
-A Common Lisp implementation of the client side of the Slime Swank debugging
+Swank Client
+============
+
+A Common Lisp implementation of the client side of the Slime/Swank debugging
 protocol.  Emacs uses the Swank protocol to communicate with a Lisp system when
-the user runs the Slime IDE.
+a user runs the Slime IDE.  The protocol is useful independently of Emacs
+because it allows a client to evaluate expressions on a remote Lisp running a
+Swank server.
 
-The protocol is useful independently of Emacs because it allows the client to
-evaluate expressions on the Swank server.
 
-Swank Client implements the following API.  For more information, see
-the documentation strings in the code.
+The Swank Client API
+====================
 
-swank-connection        The object representing a Swank connection.
-slime-connect           Connect to a remote Common Lisp using the Swank protocol.
-slime-close             Close a Swank connection.
-slime-eval              Evaluate an expression on a remote Lisp.
-slime-eval-async        Evaluate an expression on a remote Lisp asynchronously.
-slime-migrate-evals     Migrate work pending on one Swank connection to another.
-slime-network-error     The condition that represents a network error.
+swank-connection        An object representing a Swank connection.
+slime-connect           Connects to a remote Common Lisp using the Swank protocol.
+slime-close             Closes a Swank connection.
+slime-eval              Evaluates an expression on a remote Lisp.
+slime-eval-async        Evaluates an expression on a remote Lisp asynchronously.
+slime-migrate-evals     Migrates work pending on one Swank connection to another.
+slime-network-error     A condition that represents a network error.
 slime-pending-evals-p   Does a Swank connection have unfinished work pending?
+with-slime-connection   Macro that operates like with-open-file.
+
+For more information, see the documentation strings in swank-client.lisp and the
+example code in swank-client_test.lisp.
+
+
+Example code for starting a Swank server
+========================================
+
+(defvar *emacs-port* 4005)
+(defvar *swank-client-port* 10000)
+
+(defun start-swank-server-for-emacs (port)
+  "Starts a Swank server thread, listening on PORT of the host's loopback
+interface, to handle Emacs/Slime connection requests."
+  (swank:create-server :port port :dont-close t))
+
+(defun start-swank-server-for-swank-client (port)
+  "Starts a Swank server thread, listening on PORT of the host's network
+interface, to handle Swank Client connection requests."
+  (let ((swank::*loopback-interface* (sb-unix:unix-gethostname)))
+    (swank:create-server :port port :dont-close t)))
+
+(defun swank-thread ()
+  "Returns a thread that's acting as a Swank server."
+  (dolist (thread (sb-thread:list-all-threads))
+    (when (com.google.base:prefixp "Swank" (sb-thread:thread-name thread))
+      (return thread))))
+
+(defun wait-for-swank-thread ()
+  "Wait for the Swank server thread to exit."
+  (let ((swank-thread (swank-thread)))
+    (when swank-thread
+      (sb-thread:join-thread swank-thread))))
+
+(defun main ()
+  (setf swank:*configure-emacs-indentation* nil
+        swank::*enable-event-history* nil
+        swank:*log-events* t)
+  (start-swank-server-for-emacs *emacs-port*)
+  (start-swank-server-for-swank-client *swank-client-port*)
+  (wait-for-swank-thread))
+
+
+The code above starts two Swank server.  You can connect to the server on port
+4005 by using M-x slime-connect inside Emacs.  You can programmatically connect
+to the second Swank server by calling (slime-connect "my-host-name.com" 10000).
