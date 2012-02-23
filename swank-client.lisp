@@ -276,8 +276,9 @@ are communications problems."
     ;; Ignore remote Lisp feature changes.
     ((:new-features features)
      (declare (ignore features)))
+    ;; Ignore remote Lisp indentation updates.
     ((:indentation-update info)
-     (send-to-emacs `(:indentation-update ,info)))
+     (declare (ignore info)))
     ((:eval-no-wait form)
      (print (list :eval-no-wait form)))
     ((:eval thread tag form-string)
