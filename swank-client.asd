@@ -29,10 +29,13 @@
   :name "Swank Client"
   :description "Client side of the Swank protocol."
   :long-description "An implementation of the client side of Slime's Swank debugging protocol."
-  :version "1.3"
+  :version "1.4"
   :author "Robert Brown"
   :license "GPL version 2.  See the copyright messages in individual files."
-  :depends-on (com.google.base bordeaux-threads swank usocket)
+  :depends-on (bordeaux-threads
+               com.google.base
+               swank
+               usocket)
   :in-order-to ((test-op (test-op swank-client-test)))
   :components
   ((:file "package")

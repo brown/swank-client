@@ -52,9 +52,14 @@
 (deftest simple-eval-async ()
   (create-swank-server +server-port+)
   (with-slime-connection (connection "localhost" +server-port+)
-    (let ((result nil))
-      (slime-eval-async 123 connection (lambda (x) (setf result x)))
-      (sleep 0.1)
+    (let ((result nil)
+          (result-lock (bordeaux-threads:make-lock "result lock")))
+      (slime-eval-async 123
+                        connection
+                        (lambda (x)
+                          (bordeaux-threads:with-lock-held (result-lock)
+                            (setf result x))))
+      (loop until (bordeaux-threads:with-lock-held (result-lock) result))
       (is (= result 123)))))
 
 (deftest several-connections ()

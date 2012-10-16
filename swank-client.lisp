@@ -156,6 +156,8 @@ doesn't exist; otherwise, returns the first line of the file."
 (defun socket-keep-alive (socket)
   "Configures TCP keep alive packets for SOCKET.  The socket connection will be
 considered dead if keep alive packets are lost."
+  #+ccl
+  (ccl::set-socket-options socket :keepalive t)
   #+(and linux sbcl)
   (setf (sb-bsd-sockets:sockopt-tcp-keepcnt socket) 1
         (sb-bsd-sockets:sockopt-tcp-keepidle socket) 30
