@@ -158,12 +158,12 @@ doesn't exist; otherwise, returns the first line of the file."
 considered dead if keep alive packets are lost."
   #+ccl
   (ccl::set-socket-options socket :keepalive t)
+  #+sbcl
+  (setf (sb-bsd-sockets:sockopt-keep-alive socket) t)
   #+(and linux sbcl)
   (setf (sb-bsd-sockets:sockopt-tcp-keepcnt socket) 1
         (sb-bsd-sockets:sockopt-tcp-keepidle socket) 30
-        (sb-bsd-sockets:sockopt-tcp-keepintvl socket) 30)
-  #+sbcl
-  (setf (sb-bsd-sockets:sockopt-keep-alive socket) t))
+        (sb-bsd-sockets:sockopt-tcp-keepintvl socket) 30))
 
 (defun slime-net-connect (host-name port)
   "Establishes a connection to the Swank server listening on PORT of HOST-NAME.
