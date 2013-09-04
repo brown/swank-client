@@ -17,14 +17,6 @@
 
 ;;;; Author: brown@google.com (Robert Brown)
 
-(in-package #:common-lisp-user)
-
-(defpackage #:swank-client-test-system
-  (:documentation "System definition for testing the SWANK-CLIENT package.")
-  (:use #:common-lisp #:asdf))
-
-(in-package #:swank-client-test-system)
-
 (defsystem swank-client-test
   :depends-on (bordeaux-threads
                hu.dwim.stefil

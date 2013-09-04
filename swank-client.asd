@@ -17,14 +17,6 @@
 
 ;;;; Author: brown@google.com (Robert Brown)
 
-(in-package #:common-lisp-user)
-
-(defpackage #:swank-client-system
-  (:documentation "System definition for the SWANK-CLIENT package.")
-  (:use #:common-lisp #:asdf))
-
-(in-package #:swank-client-system)
-
 (defsystem swank-client
   :name "Swank Client"
   :description "Client side of the Swank protocol."
