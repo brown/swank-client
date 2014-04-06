@@ -23,7 +23,6 @@
 ;;;; Swank client
 
 (in-package #:swank-client)
-(declaim #.*optimize-default*)
 
 (deftype port () "A non-privileged TCP/IP port number." '(integer 1024 65535))
 
@@ -156,6 +155,8 @@ doesn't exist; otherwise, returns the first line of the file."
 (defun socket-keep-alive (socket)
   "Configures TCP keep alive packets for SOCKET.  The socket connection will be
 considered dead if keep alive packets are lost."
+  #+allegro
+  (socket:set-socket-options socket :keepalive t)
   #+ccl
   (ccl::set-socket-options socket :keepalive t)
   #+sbcl

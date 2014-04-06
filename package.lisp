@@ -20,8 +20,10 @@
 (in-package #:common-lisp-user)
 
 (defpackage #:swank-printing
-  (:documentation "A package that imports no symbols, used by the Swank client code to print
-s-expressions with fully package-qualified symbols.")
+  (:documentation
+   "A package that imports no symbols, used by the Swank client code when
+printing s-expression so that symbols in the printed output contain their
+package names.")
   (:use))
 
 (defpackage #:swank-client

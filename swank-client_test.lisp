@@ -30,7 +30,6 @@
   (:export #:test-swank-client))
 
 (in-package #:swank-client-test)
-(declaim #.*optimize-default*)
 
 (defsuite (test-swank-client :in root-suite) ()
   (run-child-tests))
