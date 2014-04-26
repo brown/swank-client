@@ -36,21 +36,25 @@
 
 (in-suite test-swank-client)
 
-(defconst +server-port+ 12345)
 (defconst +server-count+ 4)
+(defvar *server-port* 10000)
 
-(defun create-swank-server (port)
-  (setf swank:*configure-emacs-indentation* nil)
-  (swank:create-server :port port))
+(defun unused-port ()
+  #+google3 (port-picker:pick-unused-port)
+  #-google3 (incf *server-port*))
+
+(defun create-swank-server ()
+  (let ((port (unused-port)))
+    (is port)
+    (setf swank:*configure-emacs-indentation* nil)
+    (swank:create-server :port port)))
 
 (deftest simple-eval ()
-  (create-swank-server +server-port+)
-  (with-slime-connection (connection "localhost" +server-port+)
+  (with-slime-connection (connection "localhost" (create-swank-server))
     (is (= (slime-eval 123 connection) 123))))
 
 (deftest simple-eval-async ()
-  (create-swank-server +server-port+)
-  (with-slime-connection (connection "localhost" +server-port+)
+  (with-slime-connection (connection "localhost" (create-swank-server))
     (let ((result nil)
           (result-lock (bordeaux-threads:make-lock "result lock")))
       (slime-eval-async 123
@@ -62,12 +66,8 @@
       (is (= result 123)))))
 
 (deftest several-connections ()
-  (loop repeat +server-count+
-        for port from +server-port+
-        do (create-swank-server port))
-  (let* ((connections (loop repeat +server-count+
-                            for port from +server-port+
-                            collect (slime-connect "localhost" port)))
+  (let* ((server-ports (loop repeat +server-count+ collect (create-swank-server)))
+         (connections (loop for port in server-ports collect (slime-connect "localhost" port)))
          (work (make-array +server-count+
                            :initial-contents (loop repeat +server-count+ for i from 2 collect i)))
          (golden (map 'vector (lambda (x) (* x 2)) work)))
@@ -96,10 +96,9 @@
         (slime-close connection)))))
 
 (deftest non-ascii-characters ()
-  (create-swank-server +server-port+)
   (flet ((create-string (code)
            (concatenate 'string "hello " (string (code-char code)) " world")))
-      (with-slime-connection (connection "localhost" +server-port+)
+      (with-slime-connection (connection "localhost" (create-swank-server))
         (loop for code from 0 below 2000 by 100 do
           (let ((string (create-string code)))
             (is (string= (slime-eval string connection) string)))))))
