@@ -18,6 +18,11 @@
 ;;;; Author: brown@google.com (Robert Brown)
 
 (defsystem swank-client-test
+  :name "Swank Client test"
+  :description "Test code for package SWANK-CLIENT."
+  :version "1.5"
+  :author "Robert Brown"
+  :license "GPL version 2.  See the copyright messages in individual files."
   :depends-on (bordeaux-threads
                hu.dwim.stefil
                swank
