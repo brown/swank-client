@@ -40,8 +40,7 @@
 (defvar *server-port* 10000)
 
 (defun unused-port ()
-  #+google3 (port-picker:unused-port)
-  #-google3 (incf *server-port*))
+  (incf *server-port*))
 
 (defun create-swank-server ()
   (let ((port (unused-port)))
