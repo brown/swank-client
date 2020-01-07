@@ -477,7 +477,7 @@ closed."
 (SLIME-CONNECT HOST-NAME PORT CONNECTION-CLOSED-HOOK).  Arranges for the Swank
 connection to be closed when control exits BODY."
   `(let ((,variable (slime-connect ,host-name ,port ,connection-closed-hook)))
+     (unless ,variable (error 'slime-network-error))
      (unwind-protect
           (progn ,@body)
-       (when ,variable
-         (slime-close ,variable)))))
+       (slime-close ,variable))))

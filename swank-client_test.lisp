@@ -42,6 +42,11 @@
   (setf swank:*configure-emacs-indentation* nil)
   (swank:create-server :port 0))
 
+(deftest no-connection ()
+  (signals swank-client:slime-network-error
+           (with-slime-connection (connection "localhost" nil)
+             (slime-eval 42 connection))))
+
 (deftest simple-eval ()
   (with-slime-connection (connection "localhost" (create-swank-server))
     (is (= (slime-eval 123 connection) 123))))
