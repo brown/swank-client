@@ -29,19 +29,12 @@ example code in swank-client_test.lisp.
 Example code for starting a Swank server
 ========================================
 
+(load-quicklisp)
+(asdf:load-system 'com.google.base)
+(asdf:load-system 'swank)
+
 (defvar *emacs-port* 4005)
 (defvar *swank-client-port* 10000)
-
-(defun start-swank-server-for-emacs (port)
-  "Starts a Swank server thread, listening on PORT of the host's loopback
-interface, to handle Emacs/Slime connection requests."
-  (swank:create-server :port port :dont-close t))
-
-(defun start-swank-server-for-swank-client (port)
-  "Starts a Swank server thread, listening on PORT of the host's network
-interface, to handle Swank Client connection requests."
-  (let ((swank::*loopback-interface* (sb-unix:unix-gethostname)))
-    (swank:create-server :port port :dont-close t)))
 
 (defun swank-thread ()
   "Returns a thread that's acting as a Swank server."
@@ -59,14 +52,19 @@ interface, to handle Swank Client connection requests."
   (setf swank:*configure-emacs-indentation* nil
         swank::*enable-event-history* nil
         swank:*log-events* t)
-  (start-swank-server-for-emacs *emacs-port*)
-  (start-swank-server-for-swank-client *swank-client-port*)
+  (swank:create-server :port *emacs-port* :dont-close t)
+  (swank:create-server :port *swank-client-port* :dont-close t)
   (wait-for-swank-thread))
 
+(main)
 
 The code above starts two Swank servers.  You can connect to the server on port
-4005 from Emacs using the command M-x slime-connect.  You can programmatically
-connect to the second Swank server by loading the Swank Client code into your
-Lisp and evaluating:
+4005 from Emacs using the command M-x slime-connect.  Once connected, you can
+programmatically evaluate expressions on the second Swank server after loading
+the Swank Client code into your Lisp:
 
-  (swank-client:slime-connect "my-host.domain.com" 10000)
+(load-quicklisp)
+(asdf:load-system 'swank-client)
+
+(swank-client:with-slime-connection (connection "localhost" 10000)
+  (swank-client:slime-eval '(cons 1 2) connection))
