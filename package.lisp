@@ -15,7 +15,7 @@
 ;;;; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ;;;; MA  02110-1301, USA.
 
-;;;; Author: brown@google.com (Robert Brown)
+;;;; Author: Robert Brown <robert.brown@gmail.com>
 
 (in-package #:common-lisp-user)
 

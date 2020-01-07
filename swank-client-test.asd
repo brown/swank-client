@@ -15,12 +15,12 @@
 ;;;; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 ;;;; MA  02110-1301, USA.
 
-;;;; Author: brown@google.com (Robert Brown)
+;;;; Author: Robert Brown <robert.brown@gmail.com>
 
 (defsystem swank-client-test
   :name "Swank Client test"
   :description "Test code for package SWANK-CLIENT."
-  :version "1.5"
+  :version "1.6"
   :author "Robert Brown"
   :license "GPL version 2.  See the copyright messages in individual files."
   :depends-on (bordeaux-threads
