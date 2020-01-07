@@ -37,16 +37,10 @@
 (in-suite test-swank-client)
 
 (defconst +server-count+ 4)
-(defvar *server-port* 10000)
-
-(defun unused-port ()
-  (incf *server-port*))
 
 (defun create-swank-server ()
-  (let ((port (unused-port)))
-    (is port)
-    (setf swank:*configure-emacs-indentation* nil)
-    (swank:create-server :port port)))
+  (setf swank:*configure-emacs-indentation* nil)
+  (swank:create-server :port 0))
 
 (deftest simple-eval ()
   (with-slime-connection (connection "localhost" (create-swank-server))
