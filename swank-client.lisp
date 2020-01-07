@@ -106,7 +106,9 @@ by the remote Lisp to which it will be sent."
 (defvar *io-package*
   (let ((package (make-package :swank-client-io-package :use '())))
     (import '(nil t quote) package)
-    package))
+    package)
+  "A package used by the Swank client code when printing s-expressions, so that
+symbols in the printed output contain their package names.")
 
 (defun slime-net-encode-length (n)
   "Encodes an integer as a 6-character, 24-bit hex string."
