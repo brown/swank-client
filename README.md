@@ -1,6 +1,4 @@
-
-Swank Client
-============
+# Swank Client
 
 Swank Client is a Common Lisp implementation of the client side of the
 Slime/Swank debugging protocol.  Emacs uses the Swank protocol to communicate
@@ -8,10 +6,9 @@ with a Lisp system when a user runs the Slime IDE.  The protocol is useful
 independently of Emacs because it allows a client to evaluate expressions on a
 remote Lisp that's running a Swank server.
 
+## The Swank Client API
 
-The Swank Client API
-====================
-
+```
 swank-connection        An object representing a Swank connection.
 slime-connect           Connects to a remote Common Lisp using the Swank protocol.
 slime-close             Closes a Swank connection.
@@ -21,14 +18,16 @@ slime-migrate-evals     Migrates work pending on one Swank connection to another
 slime-network-error     A condition that represents a network error.
 slime-pending-evals-p   Does a Swank connection have unfinished work pending?
 with-slime-connection   Macro that operates like with-open-file.
+```
 
-For more information, see the documentation strings in swank-client.lisp and the
-example code in swank-client_test.lisp.
+For more information, see the documentation strings in
+[swank-client.lisp](https://github.com/brown/swank-client/blob/master/swank-client.lisp)
+and the example code in
+[swank-client-test.lisp](https://github.com/brown/swank-client/blob/master/swank-client-test.lisp).
 
+## Example code for starting a Swank server
 
-Example code for starting a Swank server
-========================================
-
+```
 (load-quicklisp)
 (asdf:load-system 'com.google.base)
 (asdf:load-system 'swank)
@@ -57,14 +56,17 @@ Example code for starting a Swank server
   (wait-for-swank-thread))
 
 (main)
+```
 
 The code above starts two Swank servers.  You can connect to the server on port
-4005 from Emacs using the command M-x slime-connect.  Once connected, you can
-programmatically evaluate expressions on the second Swank server after loading
-the Swank Client code into your Lisp:
+4005 from Emacs using the command ```M-x slime-connect```.  Once connected, you
+can programmatically evaluate expressions on the second Swank server after
+loading the Swank Client code into your Lisp:
 
+```
 (load-quicklisp)
 (asdf:load-system 'swank-client)
 
 (swank-client:with-slime-connection (connection "localhost" 10000)
   (swank-client:slime-eval '(cons 1 2) connection))
+```
