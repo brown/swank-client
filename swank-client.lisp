@@ -103,6 +103,21 @@ concurrently running threads."))
 by the remote Lisp to which it will be sent."
   (mod thread-id +maximum-thread-count+))
 
+(defun forward-event-to-worker (form package thread-id id)
+  "Determines whether an :emacs-rex event is intended for a remote worker Lisp
+and if so forwards it.  When forwarding is successful, FORWARD-EVENT-TO-WORKER
+returns T; otherwise, it returns NIL.
+
+FORWARD-EVENT-TO-WORKER is called by code in Swank Crew's patch to Slime's
+swank.lisp source file.  The forwarding it performs is used by Swank Crew
+to handle debugging of conditions signalled on remote worker Lisps.  See
+swank.lisp-patch in https://github.com/brown/swank-crew."
+  (let ((connection (find-connection-for-thread-id thread-id)))
+    (when connection
+      (let ((remote-thread-id (server-thread-id thread-id)))
+        (slime-send `(:emacs-rex ,form ,package ,remote-thread-id ,id) connection))
+      t)))
+
 (defvar *io-package*
   (let ((package (make-package :swank-client-io-package :use '())))
     (import '(nil t quote) package)
@@ -145,7 +160,8 @@ if there are communications problems."
       (ignore-errors
        (progn (force-output (usocket:socket-stream usocket))
               (setf success t)))
-      (unless success (error 'slime-network-error)))))
+      (unless success (error 'slime-network-error))))
+  (values))
 
 (defun slime-secret ()
   "Finds the secret file in the user's home directory.  Returns NIL if the file
@@ -249,22 +265,21 @@ are communications problems."
              (funcall (second rec) value))))
        ;; The value returned is not for us.  Forward it to Slime.
        (when send-to-emacs
-         (print (list 'returning value id))
          (force-output)
          (send-to-emacs `(:return ,(swank::current-thread) ,value ,id)))))
 
     ;; When a remote computation signals a condition and control ends up in the debugger, Swank
     ;; sends these events back to pop up a Slime breakpoint window.  Forward the events to Slime.
     ;; Modify the thread ID of each event to uniquely identify which remote Lisp generated it.
-    ((:debug-activate thread &rest args)
+    ((:debug-activate thread level &optional select)
      (incf thread (thread-offset connection))
-     (send-to-emacs `(:debug-activate ,thread ,@args)))
-    ((:debug thread &rest args)
+     (send-to-emacs `(:debug-activate ,thread ,level ,select)))
+    ((:debug thread level condition restarts frames continuations)
      (incf thread (thread-offset connection))
-     (send-to-emacs `(:debug ,thread ,@args)))
-    ((:debug-return thread &rest args)
+     (send-to-emacs `(:debug ,thread ,level ,condition ,restarts ,frames ,continuations)))
+    ((:debug-return thread level stepping)
      (incf thread (thread-offset connection))
-     (send-to-emacs `(:debug-return ,thread ,@args)))
+     (send-to-emacs `(:debug-return ,thread ,level ,stepping)))
 
     ((:emacs-interrupt thread)
      (slime-send `(:emacs-interrupt ,thread) connection))
@@ -288,6 +303,10 @@ are communications problems."
      (print (list :eval-no-wait form)))
     ((:eval thread tag form-string)
      (print (list :eval thread tag form-string)))
+    ((:ed-rpc-no-wait function-name &rest args)
+     (print (list :ed-rpc-no-wait function-name '&rest args)))
+    ((:ed-rpc thread tag function-name &rest args)
+     (print (list :ed-rpc thread tag function-name '&rest args)))
     ((:emacs-return thread tag value)
      (slime-send `(:emacs-return ,thread ,tag ,value) connection))
     ((:ed what)
@@ -307,7 +326,10 @@ are communications problems."
     ((:invalid-rpc id message)
      (setf (rex-continuations connection) (remove id (rex-continuations connection) :key #'car))
      (error "Invalid rpc: ~S" message))
-    (t (error "Unknown event received: ~S" event))))
+    ((:emacs-skipped-packet packet)
+     (print (list :emacs-skipped-packet packet)))
+    (t
+     (error "Unknown event received: ~S" event))))
 
 (defun slime-net-read (connection)
   "Reads a Swank message from a network CONNECTION to a Swank server.  Returns
