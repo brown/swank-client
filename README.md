@@ -1,10 +1,15 @@
 # Swank Client
 
-Swank Client is a Common Lisp implementation of the client side of the
-Slime/Swank debugging protocol.  Emacs uses the Swank protocol to communicate
-with a Lisp system when a user runs the Slime IDE.  The protocol is useful
-independently of Emacs because it allows a client to evaluate expressions on a
-remote Lisp that's running a Swank server.
+Swank Client is a Common Lisp implementation of the client side of the Swank
+debugging protocol used by [Slime](https://en.wikipedia.org/wiki/SLIME), a [GNU
+Emacs](https://www.gnu.org/software/emacs) mode that implements an IDE for Lisp
+programming.  Emacs uses the Swank protocol to communicate with a Lisp system
+when a user runs the IDE, but the protocol is useful independently of Emacs
+because it allows a client to evaluate expressions on a remote Lisp that's
+running a Swank server.
+
+Swank Client is used by [Swank Crew](https://github.com/brown/swank-crew) to
+implement a Slime IDE for developing distributed algorithms in Lisp.
 
 ## The Swank Client API
 
@@ -25,7 +30,12 @@ For more information, see the documentation strings in
 and the example code in
 [swank-client-test.lisp](https://github.com/brown/swank-client/blob/master/swank-client-test.lisp).
 
-## Example code for starting a Swank server
+## Swank Client example
+
+### Starting a Swank server
+
+The code below starts two Swank servers, one listening on port 4005 and the
+other listening on port 10000.
 
 ```
 (load-quicklisp)
@@ -58,10 +68,13 @@ and the example code in
 (main)
 ```
 
-The code above starts two Swank servers.  You can connect to the server on port
-4005 from Emacs using the command ```M-x slime-connect```.  Once connected, you
-can programmatically evaluate expressions on the second Swank server after
-loading the Swank Client code into your Lisp:
+### Using Swank Client to evaluate an expression on the server
+
+Once the Swank servers are running, you can connect to the server on port 4005
+from Emacs using the command ```M-x slime-connect```.  This connection is a
+normal Slime IDE session.  From the Slime IDE you can evaluate the following
+code, which creates a Swank Client connection to the server running on port
+10000 and remotely evaluates the expression ```(cons 1 2)```.
 
 ```
 (load-quicklisp)
