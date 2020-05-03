@@ -13,16 +13,60 @@ implement a Slime IDE for developing distributed algorithms in Lisp.
 
 ## The Swank Client API
 
+#### slime-connect host-name port &optional connection-closed-hook
+
 ```
-swank-connection        An object representing a Swank connection.
-slime-connect           Connects to a remote Common Lisp using the Swank protocol.
-slime-close             Closes a Swank connection.
-slime-eval              Evaluates an expression on a remote Lisp.
-slime-eval-async        Evaluates an expression on a remote Lisp asynchronously.
-slime-migrate-evals     Migrates work pending on one Swank connection to another.
-slime-network-error     A condition that represents a network error.
-slime-pending-evals-p   Does a Swank connection have unfinished work pending?
-with-slime-connection   Macro that operates like with-open-file.
+Connects to the Swank server running on HOST-NAME that is listening on PORT.
+Returns a SWANK-CONNECTION if the connection attempt is successful.  Otherwise,
+returns NIL.  May signal SLIME-NETWORK-ERROR if the user has a Slime secret
+file and there are network problems sending its contents to the remote Swank
+server.  If provided, function CONNECTION-CLOSED-HOOK is called when the
+connection is closed.
+```
+
+#### slime-close connection
+
+```
+Closes CONNECTION to a Swank server.
+```
+
+#### slime-eval sexp connection
+
+```
+Sends SEXP over CONNECTION to a Swank server for evaluation and waits for the
+result.  When the result is received, it is returned.  Signals
+SLIME-NETWORK-ERROR when there are network problems sending SEXP.
+```
+
+#### slime-eval-async sexp connection &optional continuation
+
+```
+Sends SEXP over CONNECTION to a Swank server for evaluation, then immediately
+returns.  Some time later, after the evaluation is finished, CONTINUATION is
+called with the result as argument.  Signals SLIME-NETWORK-ERROR when there are
+network problems sending SEXP.
+```
+
+#### slime-migrate-evals old-connection new-connection
+
+```
+Evaluates on NEW-CONNECTION all the work pending on a closed OLD-CONNECTION.
+Signals SLIME-NETWORK-ERROR when there are network problems.
+```
+
+#### slime-pending-evals-p connection
+
+```
+Returns T if there are outstanding evaluations pending on CONNECTION;
+otherwise, returns NIL.
+```
+
+#### with-slime-connection (variable host-name port &optional connection-closed-hook) &body body
+
+```
+Wraps BODY in a LET form where VARIABLE is bound to the value returned by
+(SLIME-CONNECT HOST-NAME PORT CONNECTION-CLOSED-HOOK).  Arranges for the Swank
+connection to be closed when control exits BODY.
 ```
 
 For more information, see the documentation strings in
