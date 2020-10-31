@@ -173,6 +173,7 @@ doesn't exist; otherwise, returns the first line of the file."
 (defun socket-keep-alive (socket)
   "Configures TCP keep alive packets for SOCKET.  The socket connection will be
 considered dead if keep alive packets are lost."
+  (declare (ignorable socket))
   #+allegro
   (socket:set-socket-options socket :keepalive t)
   #+ccl

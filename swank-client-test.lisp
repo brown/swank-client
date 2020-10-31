@@ -44,7 +44,7 @@
 
 (deftest no-connection ()
   (signals swank-client:slime-network-error
-           (with-slime-connection (connection "localhost" nil)
+           (with-slime-connection (connection "localhost" 12345)
              (slime-eval 42 connection))))
 
 (deftest simple-eval ()
