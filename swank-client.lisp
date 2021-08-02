@@ -365,7 +365,7 @@ Remote EXecute SEXP.
 VARs are a list of saved variables visible in the other forms.  Each VAR is
 either a symbol or a list (VAR INIT-VALUE).
 
-SEXP is evaluated and the PRINCed version is sent over CONNECTION to a remote
+SEXP is evaluated and the PRIN1-ed version is sent over CONNECTION to a remote
 Lisp.
 
 CLAUSES is a list of patterns with same syntax as `destructure-case'.  The
