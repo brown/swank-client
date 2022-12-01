@@ -21,7 +21,28 @@
 
 (defpackage #:swank-client
   (:documentation "A client interface to Swank servers.")
-  (:use #:common-lisp #:com.google.base)
+  (:use #:common-lisp)
+  (:import-from #:com.google.base
+                #:defconst
+                #:make-octet-vector
+                #:missing-argument
+                #:octet
+                #:string-to-utf8-octets
+                #:utf8-octets-to-string)
+  (:import-from #:bordeaux-threads
+                #:condition-notify
+                #:condition-wait
+                #:make-condition-variable
+                #:make-lock
+                #:make-thread
+                #:with-lock-held)
+  (:import-from #:usocket
+                #:socket
+                #:socket-close
+                #:socket-connect
+                #:socket-error
+                #:socket-stream
+                #:stream-usocket)
   (:export #:swank-connection
            #:slime-connect
            #:slime-close
