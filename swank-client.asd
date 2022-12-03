@@ -21,7 +21,7 @@
   :name "Swank Client"
   :description "Client side of the Swank protocol."
   :long-description "An implementation of the client side of Slime's Swank debugging protocol."
-  :version "1.6"
+  :version "1.7"
   :author "Robert Brown <robert.brown@gmail.com>"
   :license "GPL version 2.  See the copyright messages in individual files."
   :depends-on (bordeaux-threads
@@ -36,7 +36,7 @@
 (defsystem swank-client/test
   :name "Swank Client test"
   :description "Test code for package SWANK-CLIENT."
-  :version "1.6"
+  :version "1.7"
   :author "Robert Brown <robert.brown@gmail.com>"
   :license "GPL version 2.  See the copyright messages in individual files."
   :depends-on (hu.dwim.stefil swank-client)
