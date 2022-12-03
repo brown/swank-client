@@ -43,14 +43,17 @@
   ((host-name :reader host-name
               :type string
               :initarg :host-name
+              :initform (missing-argument)
               :documentation "Name of the host where the Swank server is running.")
    (port :reader port
          :type port
          :initarg :port
+         :initform (missing-argument)
          :documentation "Port number used to make a Swank server connection.")
    (usocket :reader usocket
             :type stream-usocket
             :initarg :usocket
+            :initform (missing-argument)
             :documentation "USOCKET used to communicate with the Swank server.")
    (thread-offset :reader thread-offset
                   :initform (incf *thread-offset* +maximum-thread-count+)
