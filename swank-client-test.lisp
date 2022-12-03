@@ -67,7 +67,7 @@
   (let* ((server-ports (loop repeat +server-count+ collect (create-swank-server)))
          (connections (loop for port in server-ports collect (slime-connect "localhost" port)))
          (work (make-array +server-count+
-                           :initial-contents (loop repeat +server-count+ for i from 2 collect i)))
+                           :initial-contents (loop for i from 2 collect i repeat +server-count+)))
          (golden (map 'vector (lambda (x) (* x 2)) work)))
     (unwind-protect
          (let ((results (make-array +server-count+ :initial-element nil))
